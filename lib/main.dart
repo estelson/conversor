@@ -5,11 +5,6 @@ import 'dart:convert';
 
 const request = "https://api.hgbrasil.com/finance?format=json&key=dc7fe941";
 
-Future<Map> getData() async {
-  http.Response response = await http.get(Uri.parse(request));
-  return json.decode(response.body);
-}
-
 void main() async {
   runApp(MaterialApp(
     home: const Home(),
@@ -35,8 +30,33 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  final realController = TextEditingController();
+  final dolarController = TextEditingController();
+  final euroController = TextEditingController();
+
   double dolar = 0.0;
   double euro = 0.0;
+
+  void _realChanged(String text) {
+    double real = double.parse(text);
+
+    dolarController.text = (real / dolar).toStringAsFixed(3);
+    euroController.text = (real / euro).toStringAsFixed(3);
+  }
+
+  void _dolarChanged(String text) {
+    double dolar = double.parse(text);
+
+    realController.text = (dolar * this.dolar).toStringAsFixed(3);
+    euroController.text = (dolar * this.dolar / euro).toStringAsFixed(3);
+  }
+
+  void _euroChanged(String text) {
+    double euro = double.parse(text);
+
+    realController.text = (euro * this.euro).toStringAsFixed(3);
+    dolarController.text = (euro * this.euro / dolar).toStringAsFixed(3);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,41 +100,22 @@ class _HomeState extends State<Home> {
                 euro = snapshot.data!["results"]["currencies"]["EUR"]["buy"];
 
                 return SingleChildScrollView(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: const <Widget>[
-                      Icon(
+                    children: <Widget>[
+                      const Icon(
                         Icons.monetization_on,
                         size: 150,
                         color: Colors.amber,
                       ),
-                      TextField(
-                        decoration: InputDecoration(
-                            labelText: "Real",
-                            labelStyle: TextStyle(color: Colors.amber),
-                            border: OutlineInputBorder(),
-                            prefixText: "R\$"),
-                        style: TextStyle(color: Colors.amber, fontSize: 25),
-                      ),
-                      Divider(),
-                      TextField(
-                        decoration: InputDecoration(
-                            labelText: "Dólar",
-                            labelStyle: TextStyle(color: Colors.amber),
-                            border: OutlineInputBorder(),
-                            prefixText: "US\$"),
-                        style: TextStyle(color: Colors.amber, fontSize: 25),
-                      ),
-                      Divider(),
-                      TextField(
-                        decoration: InputDecoration(
-                            labelText: "Euro",
-                            labelStyle: TextStyle(color: Colors.amber),
-                            border: OutlineInputBorder(),
-                            prefixText: "€"),
-                        style: TextStyle(color: Colors.amber, fontSize: 25),
-                      ),
+                      buildTextField(
+                          "Real", "R\$ ", realController, _realChanged),
+                      const Divider(),
+                      buildTextField(
+                          "Dolar", "US\$ ", dolarController, _dolarChanged),
+                      const Divider(),
+                      buildTextField("Euro", "€ ", euroController, _euroChanged)
                     ],
                   ),
                 );
@@ -124,4 +125,27 @@ class _HomeState extends State<Home> {
       ),
     );
   }
+}
+
+Future<Map> getData() async {
+  http.Response response = await http.get(Uri.parse(request));
+  return json.decode(response.body);
+}
+
+Widget buildTextField(
+    String label, String prefix, TextEditingController c, Function(String) f) {
+  return TextField(
+    controller: c,
+    decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.amber),
+        border: const OutlineInputBorder(),
+        prefixText: prefix),
+    style: const TextStyle(
+      color: Colors.amber,
+      fontSize: 25,
+    ),
+    onChanged: f,
+    keyboardType: TextInputType.number,
+  );
 }
